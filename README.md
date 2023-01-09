@@ -1,6 +1,6 @@
 # nn_project_drone
 
-To set up your project, create a repository based on this template. <br>
+To set up your project, create a repository based on this template or fork it. <br>
 Please set your repository to private and add me (LarissaRickler).
 
 You will find a task discription in the file <code>nn_project_drone.pdf</code>. <br>
