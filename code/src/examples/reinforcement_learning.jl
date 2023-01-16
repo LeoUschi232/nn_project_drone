@@ -35,6 +35,8 @@ mutable struct VtolEnv{A,T,ACT,R<:AbstractRNG} <: AbstractEnv # Parametric Const
     rng::R
 
     name::String #for multible environoments
+    visualization::Bool
+    realtime::Bool # realtime
     
     # Everything you need aditionaly can also go in here.
     #additional states for simulation; not for policy
@@ -53,6 +55,8 @@ function VtolEnv(;
     #continuous = true,
     rng = Random.GLOBAL_RNG, # Random number generation
     name = "vtol",
+    visualization = false,
+    realtime = false, # realtime
     kwargs... # let the function take an arbitrary number of keyword arguments 
 )
     
@@ -80,20 +84,24 @@ function VtolEnv(;
             ], 
     )
     
-    create_VTOL(name, actuators = true, color_vec=[1.0; 1.0; 0.6; 1.0]); #for viz
-    set_transform(name, [0.0; 0.0; 0.0] ,QuatRotation(UnitQuaternion(RotY(-pi/2.0)*RotX(pi)))); #for viz
-    set_actuators(name, [0.0; 0.0; 0.0; 0.0]) #for viz
+    if visualization
+        create_VTOL(name, actuators = true, color_vec=[1.0; 1.0; 0.6; 1.0]); #for viz
+        set_transform(name, [0.0; 0.0; 0.0] ,QuatRotation(UnitQuaternion(RotY(-pi/2.0)*RotX(pi)))); #for viz
+        set_actuators(name, [0.0; 0.0; 0.0; 0.0]) #for viz
+    end
 
     #instantiates the sctruct from before
     environment = VtolEnv(
         action_space,
         state_space,
-        zeros(T, 3), # current state, needs to be extended.
+        zeros(T, length(state_space)), # current state, needs to be extended.
         rand(action_space),
         false, # episode done ?
         0.0, # time
         rng, # random number generator  
         name,
+        visualization,
+        realtime,
         zeros(T, 3), # x_W
         zeros(T, 3), # v_B
         Matrix(UnitQuaternion(RotY(-pi/2.0)*RotX(pi))), # Float64... so T needs to be Float64
@@ -134,9 +142,11 @@ RLBase.reward(env::VtolEnv{A,T}) where {A,T} = computeReward(env)
 function RLBase.reset!(env::VtolEnv{A,T}) where {A,T}
     
     # Visualize initial state
-    set_transform(env.name, env.x_W,QuatRotation(env.R_W));
-    set_actuators(env.name, [0.0; 0.0; 0.0; 0.0])
-    
+    if env.visualization
+        set_transform(env.name, env.x_W,QuatRotation(env.R_W));
+        set_actuators(env.name, [0.0; 0.0; 0.0; 0.0])
+    end
+        
     env.x_W = [0.0; 0.0; 0.0];
     env.v_B = [0.0; 0.0; 0.0];
     env.R_W = Matrix(UnitQuaternion(RotY(-pi/2.0)*RotX(pi)));
@@ -184,10 +194,16 @@ function _step!(env::VtolEnv, next_action)
     env.x_W, env.v_B, env.R_W, env.ω_B, time = rigid_body_simple(torque_B, force_B, env.x_W, env.v_B, env.R_W, env.ω_B, env.t, env.Δt, eth_vtol_param)
 
 
+    if env.realtime
+        sleep(env.Δt); # just a dirty hack. this is of course slower than real time.
+    end
+    
     # Visualize the new state 
     # TODO: Can be removed for real trainings
-    set_transform(env.name, env.x_W, QuatRotation(env.R_W));
-    set_actuators(env.name, next_action)
+    if env.visualization
+        set_transform(env.name, env.x_W, QuatRotation(env.R_W));
+        set_actuators(env.name, next_action)
+    end
  
     env.t += env.Δt
     
@@ -221,7 +237,7 @@ rng = StableRNG(seed)
     # define multiple environments for parallel training
     env = MultiThreadEnv([
         # use different names for the visualization
-        VtolEnv(; rng = StableRNG(hash(seed+i)), name = "vtol$i") for i in 1:N_ENV
+        VtolEnv(; rng = StableRNG(hash(seed+i)), name = "vtol$i", visualization = false) for i in 1:N_ENV
     ])
 
 # Define the function approximator
@@ -283,6 +299,17 @@ function loadModel()
     return model
 end
 
+function validate_policy(t, agent, env)
+    run(agent.policy, test_env, StopAfterEpisode(1), episode_test_reward_hook)
+    # the result of the hook
+    println("test reward at step $t: $(episode_test_reward_hook.rewards[end])")
+    
+end;
+
+episode_test_reward_hook = TotalRewardPerEpisode(;is_display_on_exit=false)
+# create a env only for reward test
+test_env = VtolEnv(;name = "testVTOL", visualization = true, realtime = true);
+
 #use pretrained model
 #agent.policy.approximator = loadModel();
 
@@ -292,6 +319,8 @@ run(
            agent,
            env,
            StopAfterStep(1_000_000),
-           DoEveryNStep(saveModel, n=40_000)
+           ComposedHook(
+                DoEveryNStep(saveModel, n=100_000), 
+                DoEveryNStep(validate_policy, n=10_000)),
        )
 close_visualization(); # closes the MeshCat visualization
