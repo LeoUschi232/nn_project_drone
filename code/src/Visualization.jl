@@ -28,6 +28,13 @@ function create_visualization()
     return vis
 end
 
+function create_custom_visualization()
+    global vis = Visualizer();
+    vis.
+    render(vis); # render MeshCat in Browser. Also possible inline.
+    return vis
+end
+
 """
     create_remote_visualization()
 
