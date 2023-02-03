@@ -37,7 +37,7 @@ end
 Return line segment and progress vector of vector x_W along the trajectory gates.
 """
 function calculate_progress(gates::Vector{Vector{T}}, x_W::Vector{T}) where T
-    #Debug: maybe start has to be added to gates ?
+    # Debug: maybe start has to be added to gates ?
     phis = Vector{Vector{T}}(undef, size(gates,1)-1)
     dist = Vector{T}(undef, size(gates,1) - 1)
     for i in eachindex(phis)
