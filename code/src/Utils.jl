@@ -67,6 +67,21 @@ function generate_trajectory(num_waypoints::Int) #DEBUG: harder trajectories
     return waypoints
 end
 
+"""
+    generate_trajectory(num_waypoints::Int)
+
+Generates trajectory with num_waypoints waypoints (including starting point at [0.0, 0.0, 0.0]).
+"""
+function generate_3d_trajectory(num_waypoints::Int)
+    waypoints = Vector{Vector{Float64}}(undef, num_waypoints)
+    waypoints[1] = [0.0, 0.0, 0.0] # zero is first waypoint
+    for i in 2:num_waypoints
+        # maybe different ranges
+        waypoints[i] = waypoints[i - 1] + [rand(Uniform(-5.0, 5.0)), rand(Uniform(-5.0, 5.0)), rand(Uniform(0.0, 5.0))]
+    end
+    return waypoints
+end
+
 
 function testRotationMatrix(R)
 
