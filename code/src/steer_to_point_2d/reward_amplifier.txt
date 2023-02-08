@@ -1,0 +1,9 @@
+
+    # Increase reward for better timing after performance threshold
+    perf_th = 1.0;
+    if(reward > perf_th)
+        reward *= (1.0 / (dwp^2 * env.t))
+        if(dwp < env.proximity_tolerance)
+            reward *= reward;
+        end
+    end
