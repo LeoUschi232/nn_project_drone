@@ -1,0 +1,21 @@
+Julia doc
+https://docs.julialang.org/en/v1/
+
+Julia tutorials (optional)
+https://julialang.org/learning/
+
+reinforcement learning doc
+(Just for reference. You dont need to look into this if you dont have a special question.)
+https://juliareinforcementlearning.org/docs/
+
+flux doc 
+(flux is the keras/torch version for Julia.
+ Just for reference. You dont need to look into this if you dont have a special question.)
+https://fluxml.ai/Flux.jl/stable/
+
+primal paper
+(Focus on network architecture and reward function)
+https://arxiv.org/pdf/2203.15052v1.pdf
+
+briefly research following therms
+Multilayer perceptron, actor critic method, ppo
